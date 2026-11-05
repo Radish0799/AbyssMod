@@ -156,6 +156,11 @@ public class TranslationCache
 				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
+					// 遠端是空檔（目前 other/ 全是 {}）也要記戳記，否則每次啟動都重抓
+					if (dictionary != null)
+					{
+						MarkEmpty(legacyCachePath, raw);
+					}
 					return;
 				}
 			}
@@ -287,6 +292,11 @@ public class TranslationCache
 				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
+					// 遠端是空檔（目前 other/ 全是 {}）也要記戳記，否則每次啟動都重抓
+					if (dictionary != null)
+					{
+						MarkEmpty(cachePath, raw);
+					}
 					return;
 				}
 			}
@@ -396,6 +406,11 @@ public class TranslationCache
 				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
+					// 遠端是空檔（目前 other/ 全是 {}）也要記戳記，否則每次啟動都重抓
+					if (dictionary != null)
+					{
+						MarkEmpty(cachePath, raw);
+					}
 					return;
 				}
 			}
@@ -642,6 +657,15 @@ public class TranslationCache
 			memoryStream.WriteByte(raw[i]);
 		}
 		return Convert.ToHexString(MD5.HashData(memoryStream.ToArray())).ToLowerInvariant();
+	}
+
+	private static void MarkEmpty(string cachePath, byte[] raw)
+	{
+		if (!File.Exists(cachePath))
+		{
+			SaveToFile(cachePath, new Dictionary<string, string>());
+		}
+		WriteStamp(cachePath, raw);
 	}
 
 	private static bool IsFresh(string cachePath, string expectedHash)
