@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-11-06
+
+### 修正 / Fixed
+
+- 快取閘門永不命中：改以下載內容的位元組 md5（存於快取旁 `.md5`）比對 manifest，沒更新時不再重抓。
+- add-on / other 只同步 manifest 列出的分類；遠端空檔也記錄，避免每次重抓。
+
+### 其他
+
+- 以 2.1.0_fix 反編譯碼為基礎，補上專案檔並修正反編譯造成的型別歧義。
+
 ## [1.2.0] - 2026-06-23
 
 ### 新增 / Added

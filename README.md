@@ -1,3 +1,39 @@
+# AbyssMod 社群維護版（2.1.x）
+
+ドットアビスX（DMM Game Player Windows 版）繁體中文漢化 MOD。翻譯資料來自
+[liuyuns2/Dot-abyess-Lienchu-version](https://github.com/liuyuns2/Dot-abyess-Lienchu-version)，由 mod 開遊戲時從 jsDelivr 自動同步。
+
+來源：anosu/AbyssMod → s88037zz/AbyssMod v1.2.0（MIT）→ liuyuns2 發布的 2.1.0_fix（已交接，原始碼以 ILSpy 反編譯重建）→ 本 repo。
+
+## 安裝
+
+1. 到 [Releases](../../releases) 下載最新的 `AbyssMod-x.y.z.zip`（不是 Source code）。
+2. 遊戲根目錄（有 `ドットアビスX.exe` 的資料夾）裡若已有舊版，先刪掉 `BepInEx` 資料夾。
+3. 把 zip 解壓到遊戲根目錄，覆蓋。
+4. 正常開遊戲。第一次會跳出黑色主控台視窗下載 Unity 補丁，等它跑完即可。
+
+## 2.1.1 改了什麼
+
+- **修正每次開遊戲都重新下載全部翻譯**：舊版快取比對的雜湊算法和 manifest 不同，永遠判定「有更新」。
+  現在下載成功會在快取旁存 `.md5`，沒更新時直接用本地快取。翻譯沒更新時開遊戲，翻譯檔請求從約 26 個降到 0。
+- add-on / other 只抓 manifest 列出的分類，不再請求不存在的網址（add-on 13 → 2）。
+- 發布包附上 `BepInEx/config/AbyssMod.cfg`（CDN 已指向翻譯資料）。
+
+## 編譯
+
+需要 .NET SDK，且遊戲已用本 mod 跑過一次（產生 `BepInEx/interop`）。
+
+```
+set ABYSS_GAME_DIR=D:\dmmgame\dotabyss_x_cl
+dotnet build AbyssMod/AbyssMod.csproj -c Release -o out
+```
+
+產物是 `out/AbyssMod.dll`，覆蓋到 `BepInEx/plugins/AbyssMod/`。`AbyssCdnRouter` 沿用 2.1.0_fix 原檔，原始碼在 `AbyssCdnRouter/`。
+
+---
+
+以下為上游 s88037zz/AbyssMod v1.2.0 的說明，部分內容（版本號、安裝檔名）已過時。
+
 # AbyssMod
 
 > 🎮 ドットアビス 漢化 MOD（社群擴展版）

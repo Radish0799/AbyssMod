@@ -15,7 +15,7 @@ using Utility.Toast;
 
 namespace AbyssMod;
 
-[BepInPlugin("AbyssMod", "AbyssMod", "2.1.0")]
+[BepInPlugin("AbyssMod", "AbyssMod", "2.1.1")]
 public class Plugin : BasePlugin
 {
 	private const int HttpTimeoutSeconds = 10;
@@ -59,7 +59,7 @@ public class Plugin : BasePlugin
 		Initialize();
 		PatchManager.Initialize();
 		Trans.Initialize();
-		Toast.Success("AbyssMod", "Mod 加载成功，版本: 2.1.0");
+		Toast.Success("AbyssMod", "Mod 加载成功，版本: 2.1.1");
 	}
 
 	private static void Initialize()
@@ -72,7 +72,7 @@ public class Plugin : BasePlugin
 		{
 			Timeout = TimeSpan.FromSeconds(10.0)
 		};
-		httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("AbyssMod/2.1.0");
+		httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("AbyssMod/2.1.1");
 		TranslationCache cache = new TranslationCache(AbyssMod.Config.TranslationCDN.Value, Path.Combine(Paths.PluginPath, "AbyssMod", "cache", "translations"), AbyssMod.Config.TranslationLanguage.Value, httpClient);
 		string value = AbyssMod.Config.FontBundlePath.Value;
 		FontHelper font = new FontHelper(Path.IsPathRooted(value) ? value : Path.Combine(Paths.PluginPath, value));
