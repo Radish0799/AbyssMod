@@ -1,6 +1,16 @@
 # AbyssMod
 
-用舊版 2.1.0_fix 的人，只要換一個檔案就好，不用重裝：
+ドットアビスX（DMM Game Player 版）繁體中文漢化 MOD。
+
+## 第一次安裝
+
+1. 從 [Releases](../../releases/latest) 下載 `AbyssMod-x.y.z.zip`（不是 Source code）。
+2. 解壓到遊戲資料夾（有 `ドットアビスX.exe` 的那層）。
+3. 照常開遊戲。第一次會多跳一個黑色視窗跑一兩分鐘，等它跑完、遊戲出現中文就好了。
+
+## 從舊版 2.1.0_fix 升級
+
+只要換一個檔案就好，不用重裝：
 
 1. 關掉遊戲。
 2. 從 [Releases](../../releases/latest) 下載 `AbyssMod.dll`（約 135 KB，不用下載整包）。
