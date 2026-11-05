@@ -1,3 +1,4 @@
+using Object = UnityEngine.Object;
 using System;
 using AbyssMod.Services;
 using HarmonyLib;

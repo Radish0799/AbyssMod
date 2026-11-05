@@ -133,13 +133,14 @@ public class TranslationCache
 		await semaphore.WaitAsync();
 		try
 		{
-			if (expectedHash != null && File.Exists(legacyCachePath) && HashFile(legacyCachePath) == expectedHash)
+			if (IsFresh(legacyCachePath, expectedHash))
 			{
 				CopyLegacyToAddOnIfNewer(legacyCachePath, addOnCachePath);
 				Logger.Info("legacy/add-on/ui_misc cache hit");
 				return;
 			}
 			Dictionary<string, string> dictionary;
+			byte[] raw;
 			try
 			{
 				HttpResponseMessage httpResponseMessage = await CdnRouter.GetDualAsync(_client, remoteUrl, preferRaw: false);
@@ -151,7 +152,8 @@ public class TranslationCache
 				{
 					return;
 				}
-				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(await httpResponseMessage.Content.ReadAsStringAsync());
+				raw = await httpResponseMessage.Content.ReadAsByteArrayAsync();
+				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
 					return;
@@ -178,6 +180,7 @@ public class TranslationCache
 			}
 			SaveToFile(legacyCachePath, dictionary3);
 			SaveToFile(addOnCachePath, dictionary3);
+			WriteStamp(legacyCachePath, raw);
 			Logger.Info($"legacy/add-on/{"ui_misc"} synced: +{dictionary.Count} remote, {dictionary3.Count} total");
 		}
 		finally
@@ -221,6 +224,11 @@ public class TranslationCache
 
 	private IEnumerable<string> CollectAddOnCategoryCandidates()
 	{
+		// manifest 在手就只抓它列出的分類；寫死清單裡大多是 CDN 上不存在的路徑，每次啟動白打（TODO 第 1 項）
+		if (_manifest?.AddOn != null)
+		{
+			return new HashSet<string>(_manifest.AddOn.Keys, StringComparer.OrdinalIgnoreCase);
+		}
 		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		string[] allCustomCategories = TextClassifier.AllCustomCategories;
 		foreach (string item in allCustomCategories)
@@ -256,12 +264,13 @@ public class TranslationCache
 		await semaphore.WaitAsync();
 		try
 		{
-			if (expectedHash != null && File.Exists(cachePath) && HashFile(cachePath) == expectedHash)
+			if (IsFresh(cachePath, expectedHash))
 			{
 				Logger.Info("add-on/" + category + " cache hit");
 				return;
 			}
 			Dictionary<string, string> dictionary;
+			byte[] raw;
 			try
 			{
 				HttpResponseMessage httpResponseMessage = await CdnRouter.GetDualAsync(_client, remoteUrl, preferRaw: false);
@@ -274,7 +283,8 @@ public class TranslationCache
 					Logger.Warn($"add-on/{category} fetch returned {httpResponseMessage.StatusCode}");
 					return;
 				}
-				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(await httpResponseMessage.Content.ReadAsStringAsync());
+				raw = await httpResponseMessage.Content.ReadAsByteArrayAsync();
+				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
 					return;
@@ -291,6 +301,7 @@ public class TranslationCache
 				dictionary2[item.Key] = item.Value;
 			}
 			SaveToFile(cachePath, dictionary2);
+			WriteStamp(cachePath, raw);
 			Logger.Info($"add-on/{category} synced from CDN: +{dictionary.Count} remote, {dictionary2.Count} total");
 		}
 		finally
@@ -328,6 +339,10 @@ public class TranslationCache
 
 	private IEnumerable<string> CollectOtherCategoryCandidates()
 	{
+		if (_manifest?.Other != null)
+		{
+			return new HashSet<string>(_manifest.Other.Keys, StringComparer.OrdinalIgnoreCase);
+		}
 		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		string[] allCustomCategories = TextClassifier.AllCustomCategories;
 		foreach (string item in allCustomCategories)
@@ -358,12 +373,13 @@ public class TranslationCache
 		await semaphore.WaitAsync();
 		try
 		{
-			if (expectedHash != null && File.Exists(cachePath) && HashFile(cachePath) == expectedHash)
+			if (IsFresh(cachePath, expectedHash))
 			{
 				Logger.Info("other/" + category + " cache hit");
 				return;
 			}
 			Dictionary<string, string> dictionary;
+			byte[] raw;
 			try
 			{
 				HttpResponseMessage httpResponseMessage = await CdnRouter.GetDualAsync(_client, remoteUrl, preferRaw: false);
@@ -376,7 +392,8 @@ public class TranslationCache
 					Logger.Warn($"other/{category} fetch returned {httpResponseMessage.StatusCode}");
 					return;
 				}
-				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(await httpResponseMessage.Content.ReadAsStringAsync());
+				raw = await httpResponseMessage.Content.ReadAsByteArrayAsync();
+				dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
 				if (dictionary == null || dictionary.Count == 0)
 				{
 					return;
@@ -393,6 +410,7 @@ public class TranslationCache
 				dictionary2[item.Key] = item.Value;
 			}
 			SaveToFile(cachePath, dictionary2);
+			WriteStamp(cachePath, raw);
 			Logger.Info($"other/{category} synced from CDN: +{dictionary.Count} remote, {dictionary2.Count} total");
 		}
 		finally
@@ -447,16 +465,28 @@ public class TranslationCache
 			}
 			if (expectedHash != null && File.Exists(cachePath))
 			{
-				string text = HashFile(cachePath);
-				if (text == expectedHash)
+				string text = ReadStamp(cachePath);
+				if (string.Equals(text, expectedHash, StringComparison.OrdinalIgnoreCase))
 				{
 					Logger.Info("Cache hit: " + cacheKey);
 					return LoadFromFile(cachePath);
 				}
-				Logger.Info($"Cache hash mismatch for {cacheKey}, expected={expectedHash}, local={text}");
+				Logger.Info($"Cache hash mismatch for {cacheKey}, expected={expectedHash}, local={text ?? "(no stamp)"}");
 			}
 			Logger.Info("Fetching from remote: " + remoteUrl);
-			Dictionary<string, string> dictionary2 = await GetAsync<Dictionary<string, string>>(remoteUrl);
+			byte[] raw = await GetRawAsync(remoteUrl);
+			Dictionary<string, string> dictionary2 = null;
+			if (raw != null)
+			{
+				try
+				{
+					dictionary2 = JsonSerializer.Deserialize<Dictionary<string, string>>(raw);
+				}
+				catch (Exception ex)
+				{
+					Logger.Error("JSON parse error for " + remoteUrl + ": " + ex.Message);
+				}
+			}
 			if (dictionary2 != null)
 			{
 				if (type == "ability_descriptions" && File.Exists(cachePath))
@@ -472,6 +502,7 @@ public class TranslationCache
 					Logger.Info($"ability_descriptions merged: {dictionary2.Count} total (remote {count}, +{dictionary2.Count - count} local-only kept)");
 				}
 				SaveToFile(cachePath, dictionary2);
+				WriteStamp(cachePath, raw);
 			}
 			else
 			{
@@ -545,15 +576,14 @@ public class TranslationCache
 		};
 	}
 
-	private async Task<T> GetAsync<T>(string url) where T : class
+	private async Task<byte[]> GetRawAsync(string url)
 	{
-		_ = 1;
 		try
 		{
 			HttpResponseMessage httpResponseMessage = await CdnRouter.GetDualAsync(_client, url, preferRaw: false);
 			if (httpResponseMessage.IsSuccessStatusCode)
 			{
-				return await httpResponseMessage.Content.ReadFromJsonAsync<T>((JsonSerializerOptions?)null, default(CancellationToken));
+				return await httpResponseMessage.Content.ReadAsByteArrayAsync();
 			}
 		}
 		catch (Exception ex)
@@ -561,6 +591,62 @@ public class TranslationCache
 			Logger.Error("HTTP GET error for " + url + ": " + ex.Message);
 		}
 		return null;
+	}
+
+	// 快取閘門：manifest 記的是「CDN 檔案位元組 md5（CRLF→LF）」，AbyssCdnRouter 也拿它驗下載內容。
+	// 快取檔是合併後重新序列化的，算不回原 md5，所以下載成功時把遠端位元組的 md5 存成旁邊的 .md5，
+	// 下次比這個。舊版的 HashFile/GetHash 算法和 manifest 不同，永遠不命中，導致每次啟動全部重抓。
+	private static string StampPath(string cachePath)
+	{
+		return cachePath + ".md5";
+	}
+
+	private static string ReadStamp(string cachePath)
+	{
+		try
+		{
+			string path = StampPath(cachePath);
+			return File.Exists(path) ? File.ReadAllText(path).Trim() : null;
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static void WriteStamp(string cachePath, byte[] raw)
+	{
+		if (raw == null)
+		{
+			return;
+		}
+		try
+		{
+			File.WriteAllText(StampPath(cachePath), RawMd5(raw));
+		}
+		catch (Exception ex)
+		{
+			Logger.Warn("Failed to write cache stamp for " + cachePath + ": " + ex.Message);
+		}
+	}
+
+	private static string RawMd5(byte[] raw)
+	{
+		using MemoryStream memoryStream = new MemoryStream(raw.Length);
+		for (int i = 0; i < raw.Length; i++)
+		{
+			if (raw[i] == 13 && i + 1 < raw.Length && raw[i + 1] == 10)
+			{
+				continue;
+			}
+			memoryStream.WriteByte(raw[i]);
+		}
+		return Convert.ToHexString(MD5.HashData(memoryStream.ToArray())).ToLowerInvariant();
+	}
+
+	private static bool IsFresh(string cachePath, string expectedHash)
+	{
+		return expectedHash != null && File.Exists(cachePath) && string.Equals(ReadStamp(cachePath), expectedHash, StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static Dictionary<string, string> LoadFromFile(string path)

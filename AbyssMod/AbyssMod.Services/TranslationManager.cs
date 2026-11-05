@@ -1,3 +1,4 @@
+using Object = UnityEngine.Object;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

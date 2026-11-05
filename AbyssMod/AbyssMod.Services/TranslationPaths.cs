@@ -153,12 +153,7 @@ public static class TranslationPaths
 
 	public static IEnumerable<string> EnumerateMasterDictTypes()
 	{
-		return ContentTypes.Where((string t) => !string.Equals(t, "novels", StringComparison.OrdinalIgnoreCase)).Where(IsNotMasterDataType).Where(TranslationPaths.IsNotMasterDataType);
-	}
-
-	private static bool IsNotMasterDataType(string t)
-	{
-		return !t.StartsWith("m_", StringComparison.Ordinal);
+		return ContentTypes.Where((string t) => !string.Equals(t, "novels", StringComparison.OrdinalIgnoreCase)).Where(IsNotMasterDataType);
 	}
 
 	private static bool IsNotMasterDataType(string t)

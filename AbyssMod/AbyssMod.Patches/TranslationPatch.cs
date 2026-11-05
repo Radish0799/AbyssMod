@@ -47,7 +47,7 @@ public static class TranslationPatch
 		_novelController = __instance;
 	}
 
-	public static bool TryGetCurrentNovel(out Dictionary<string, string> translation)
+	public static bool TryGetCurrentNovel(out System.Collections.Generic.Dictionary<string, string> translation)
 	{
 		translation = null;
 		if (Config.Translation.Value)
@@ -116,7 +116,7 @@ public static class TranslationPatch
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(NovelText), "Parse")]
-	public static void SetText(List<Letter> letters, ref string message)
+	public static void SetText(Il2CppSystem.Collections.Generic.List<Letter> letters, ref string message)
 	{
 		if (TryGetCurrentNovel(out var translation) && !string.IsNullOrEmpty(message) && translation.TryGetValue(message, out var value))
 		{
@@ -134,12 +134,12 @@ public static class TranslationPatch
 
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(NovelLogPopup), "SetData")]
-	public static void SetLog(ref List<NovelLogData> dataList)
+	public static void SetLog(ref Il2CppSystem.Collections.Generic.List<NovelLogData> dataList)
 	{
 		//IL_00b9: Unknown result type (might be due to invalid IL or missing references)
 		//IL_00c3: Expected Obj, but got Unknown
-		List<NovelLogData> val = new List<NovelLogData>();
-		Enumerator<NovelLogData> enumerator = dataList.GetEnumerator();
+		Il2CppSystem.Collections.Generic.List<NovelLogData> val = new Il2CppSystem.Collections.Generic.List<NovelLogData>();
+		Il2CppSystem.Collections.Generic.List<NovelLogData>.Enumerator enumerator = dataList.GetEnumerator();
 		while (enumerator.MoveNext())
 		{
 			NovelLogData current = enumerator.Current;

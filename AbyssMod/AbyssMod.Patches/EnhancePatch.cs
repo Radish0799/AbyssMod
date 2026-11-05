@@ -72,8 +72,8 @@ public static class EnhancePatch
 	}
 
 	[HarmonyPostfix]
-	[HarmonyPatch(typeof(TopView), "PlayMovie")]
-	public static void DisableTitleMovie(TopView __instance, CancellationToken ct)
+	[HarmonyPatch(typeof(Project.Title.TopView), "PlayMovie")]
+	public static void DisableTitleMovie(Project.Title.TopView __instance, CancellationToken ct)
 	{
 		if (!Config.TitleMovie.Value)
 		{

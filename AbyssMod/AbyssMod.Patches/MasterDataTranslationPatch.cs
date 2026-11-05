@@ -1,3 +1,5 @@
+using IntPtr = System.IntPtr;
+using Exception = System.Exception;
 using System;
 using System.Collections.Generic;
 using AbyssMod.Services;
@@ -14,7 +16,7 @@ public static class MasterDataTranslationPatch
 {
 	[HarmonyPrefix]
 	[HarmonyPatch(typeof(MasterDataStore), "_DownloadFirstAsync_b__8_0")]
-	public static void TranslateBeforeCache(Type elementType, Object rowsArray)
+	public static void TranslateBeforeCache(Il2CppSystem.Type elementType, Il2CppSystem.Object rowsArray)
 	{
 		if (!Config.Translation.Value || Plugin.Trans == null || rowsArray == null)
 		{
@@ -52,7 +54,7 @@ public static class MasterDataTranslationPatch
 		}
 	}
 
-	private static int TranslateRow(IntPtr rowPtr, TableMapping table)
+	private static int TranslateRow(System.IntPtr rowPtr, TableMapping table)
 	{
 		int num = 0;
 		foreach (FieldEntry field in table.Fields)
